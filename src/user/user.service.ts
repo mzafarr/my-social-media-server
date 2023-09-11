@@ -7,40 +7,39 @@ import { InjectRepository } from '@nestjs/typeorm';
 import { User } from 'src/entities/user.entity';
 import { Repository } from 'typeorm';
 import * as bcrypt from 'bcrypt';
+import { CreateUserDto } from 'src/dto/createUserDto';
 @Injectable()
 export class UserService {
   constructor(
     @InjectRepository(User) private readonly userRepo: Repository<User>,
   ) {}
 
-  async signUp(user: User): Promise<User> {
-    const { username, email, password } = user;
+  async signUp(createUserDto: CreateUserDto): Promise<User> {
+    const { username, email } = createUserDto;
 
     try {
       if (
-        (await this.findUserByUsername(username)) ||
-        (await this.findUserByEmail(email))
+        (await this.findUserByUsername(username) !== null) ||
+        (await this.findUserByEmail(email) !== null)
       ) {
         throw new ConflictException('Username or email already in use.');
       }
-      const hash = await bcrypt.hash(password, 10);
-
-      return await this.userRepo.create(user);
+      const user = await this.userRepo.create(createUserDto);
+      return await this.userRepo.save(user);
     } catch (error) {
       console.log(error);
-      //   throw new InternalServerErrorException('User registration failed.'); check what does it do
     }
   }
 
   async signIn(username: string, password: string) {
     const user = await this.findUserByUsername(username);
-    if (!user) {
-      throw new ConflictException('This username or email is not registered.');
+    if (user === null) {
+      throw new Error('This username is not registered.');
     }
     const isPasswordValid = await bcrypt.compare(password, user.password);
 
     if (!isPasswordValid) {
-      throw new UnauthorizedException('Invalid credentials');
+      throw new Error('Invalid credentials');
     }
 
     //implement jwt
@@ -49,13 +48,13 @@ export class UserService {
 
   async findUserByUsername(username: string): Promise<User | undefined> {
     return await this.userRepo.findOne({
-      where: [{ username }],
+      where: { username },
     });
   }
 
   async findUserByEmail(email: string): Promise<User | undefined> {
     return await this.userRepo.findOne({
-      where: [{ email }],
+      where: { email },
     });
   }
 }

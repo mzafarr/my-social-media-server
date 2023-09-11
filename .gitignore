@@ -1,9 +1,6 @@
 # compiled output
 /dist
 /node_modules
-/src/auth
-/src/user
-/src/post
 # Logs
 logs
 *.log

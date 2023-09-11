@@ -1,9 +1,9 @@
-import { Entity, Column, Index, OneToMany, EntityRepository, Repository } from 'typeorm';
-import { Post } from './post.entity';
-
-@EntityRepository(User)
-export class User extends Repository<User>{
-  @Column({ nullable: false, unique: true, length: 30 })
+import { Entity, Column, OneToMany, BeforeInsert, PrimaryColumn } from 'typeorm';
+import { UserPost } from './userpost.entity';
+import * as bcrypt from 'bcrypt'
+@Entity()
+export class User {
+  @PrimaryColumn()
   username: string;
 
   @Column()
@@ -15,6 +15,24 @@ export class User extends Repository<User>{
   @Column()
   password: string;
 
-  @OneToMany(() => Post, (post) => post.user)
-  posts: Post[];
+  @OneToMany(() => UserPost, (post) => post.username)
+  posts: UserPost[];
+
+  @BeforeInsert()
+  async hashPasword() {
+    this.password = await bcrypt.hash(this.password, 10);
+  }
+  // @BeforeInsert()
+  // async hashPasword() {
+  //   // this.password = await bcrypt.hash(this.password, 10);
+  //   bcrypt.genSalt(10, (err, salt) => {
+  //     bcrypt.hash(this.password, salt, (err, hash) => {
+  //       if (err) {
+  //         console.log('PASSWORD NOT HASHING')
+  //       } else {
+  //         this.password = hash
+  //       }
+  //     });
+  //   });
+  // }
 }
